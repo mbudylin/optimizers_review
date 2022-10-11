@@ -1,0 +1,13 @@
+numpy
+pandas
+matplotlib
+seaborn
+pyomo
+cvxpy
+cvxopt
+ipopt
+coincbc
+coinbonmin
+ipython
+ipython-autotime
+jupyterlab
