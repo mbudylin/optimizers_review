@@ -1,5 +1,10 @@
 """
 Примеры из статьи
+# все тесты
+pytest -v
+# конкретный тест:
+pytest -k  test_scipy_scale
+
 """
 
 import numpy as np
@@ -7,6 +12,7 @@ import scipy.optimize as scopt
 import pyomo.environ as pyo
 from pyomo.gdp import Disjunct, Disjunction
 import cvxpy as cp
+import pytest
 
 
 def test_scipy_scale():
@@ -60,7 +66,9 @@ def test_scipy_scale():
     print('Значение маржи', margin_nonscaled, ' и M0', M0)
 
     # captured = capsys.readouterr()
-    # from pdb import set_trace; set_trace()
+
+    # assert "Значение функции  -1" in captured.out
+    from pdb import set_trace; set_trace()
 
     assert [0.9, 1.016, 1.1] == list(np.round(res_scaled['x'], 3))
     assert -29210742 == f_obj_val_scaled
@@ -71,7 +79,7 @@ def test_scipy_scale():
     assert 5400000.0 == margin_nonscaled
 
 
-def _test_scipy_highs():
+def test_scipy_highs():
 
     # пример с "рюкзаком" у которого типы переменных различаются
     # так как задача максимизации, не забываем ставить минус
