@@ -3,7 +3,7 @@
 # все тесты
 pytest -v
 # конкретный тест:
-pytest -k  test_scipy_scale
+pytest -k test_scipy_scale
 
 """
 
