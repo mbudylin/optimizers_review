@@ -68,7 +68,7 @@ def test_scipy_scale():
     # captured = capsys.readouterr()
 
     # assert "Значение функции  -1" in captured.out
-    from pdb import set_trace; set_trace()
+    # from pdb import set_trace; set_trace()
 
     assert [0.9, 1.016, 1.1] == list(np.round(res_scaled['x'], 3))
     assert -29210742 == f_obj_val_scaled
