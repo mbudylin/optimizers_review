@@ -16,14 +16,18 @@ import pytest
 
 
 def test_scipy_scale():
+    """
+    Поиск оптимальных цен через scipy  с масштабированием целевой функции и без.
+    """
+
     # задаем параметры E, используемые в формуле Q = Q0 * exp(E * (x - 1))
     E = np.array([-3., -1., -0.5])
     # текущие цены
-    P0 = np.array([10., 10., 10.])
+    P0 = np.array([100., 100., 100.])
     # текущие продажи
-    Q0 = np.array([500000., 2000000., 300000.0])
+    Q0 = np.array([50000., 200000., 30000.0])
     # себестоимость
-    C = np.array([9.0, 8.0, 7.0])
+    C = np.array([90.0, 80.0, 70.0])
     # текущая выручка
     R0 = np.sum(P0 * Q0)
     # текущая маржа
@@ -33,50 +37,49 @@ def test_scipy_scale():
     def f_obj(x, args):
         f = - args['scale'] * np.sum(Q0 * P0 * x * np.exp(E * (x - 1.)))
         return f
+
     obj = f_obj
 
     # функция для ограничения по марже, по умолчанию отмасштабиируем ограничения на текущую выручку
     def f_cons(x):
         f = np.sum(Q0 * (P0 * x - C) * np.exp(E * (x - 1.0))) / R0
         return f
-    cons = [scopt.NonlinearConstraint(f_cons, lb=M0 / R0, ub=np.inf)]
 
+    con_mrg = scopt.NonlinearConstraint(f_cons, lb=M0 / R0, ub=np.inf)
     # поиск новой цены производим в диапазоне 90% - 110% от текущей цены
     x_bounds = [(0.9, 1.1)] * 3
+    # ограничение для переменых в cobyla
+    con_bnd = scopt.LinearConstraint(np.eye(3), lb=[0.9] * 3, ub=[1.1] * 3)
     # стартовая точка для поиска
     x0 = [1.0] * 3
 
-    res_nonscaled = scopt.minimize(obj, x0, bounds=x_bounds, constraints=cons,
-                                   method='slsqp', args={'scale': 1.})
-    res_scaled = scopt.minimize(obj, x0, bounds=x_bounds, constraints=cons,
-                                method='slsqp', args={'scale': 1.0 / R0})
+    # res_nonscaled = scopt.minimize(obj, x0, bounds=x_bounds, constraints=cons, method='slsqp', args={'scale': 1.})
+    # res_scaled = scopt.minimize(obj, x0, bounds=x_bounds, constraints=cons, method='slsqp', args={'scale': 1.0 / R0})
+    # print('Решение без масштабирования ', np.round(res_nonscaled['x'], 3), res_nonscaled['message'])
+    # print('Решение с масштабированием ', np.round(res_scaled['x'], 3), res_scaled['message'])
+    # print('Значение функции ', round(f_obj(res_scaled['x'], args={'scale': 1.0}), ))
+    # print('Значение маржи', round(R0 * cons[0].fun(res_scaled['x']), 1), ' и M0', M0)
 
-    f_obj_val_scaled = round(f_obj(res_scaled['x'], args={'scale': 1.0}), )
-    margin_scaled = round(R0 * cons[0].fun(res_scaled['x']), 1)
+    res_cobyla = scopt.minimize(obj, x0, constraints=[con_bnd, con_mrg], method='cobyla', args={'scale': 1})
+    print('Решение сobyla ', np.round(res_cobyla['x'], 4), res_cobyla['message'])
 
-    f_obj_val_nonscaled = round(f_obj(res_nonscaled['x'], args={'scale': 1.0 / R0}), )
-    margin_nonscaled = round(R0 * cons[0].fun(res_nonscaled['x']), 1)
+    assert [0.9, 1.016, 1.1] == list(np.round(res_cobyla['x'], 3))
 
-    print('Решение с масштабированием ', np.round(res_scaled['x'], 3), '\n', res_scaled['message'])
-    print('Значение функции ', f_obj_val_scaled)
-    print('Значение маржи', margin_scaled, ' и M0', M0)
-    print('------------------------------------')
-    print('Решение без масштабирования', np.round(res_nonscaled['x'], 3), '\n', res_nonscaled['message'])
-    print('Значение функции ', f_obj_val_nonscaled)
-    print('Значение маржи', margin_nonscaled, ' и M0', M0)
+    res_trust_const = \
+        scopt.minimize(obj, x0, bounds=x_bounds, constraints=[con_mrg], method='trust-constr', args={'scale': 1})
+    print('Решение trust-constr', np.round(res_trust_const['x'], 4), res_trust_const['message'])
+    assert [0.9, 1.016, 1.1] == list(np.round(res_trust_const['x'], 3))
 
-    # captured = capsys.readouterr()
+    # применение солвера slsqp
+    res_slsqp = \
+        scopt.minimize(obj, x0, bounds=x_bounds, constraints=[con_mrg], method='slsqp', args={'scale': 1})
+    print('Решение slsqp', np.round(res_slsqp['x'], 4), res_slsqp['message'])
+    assert [1., 1., 1.] == list(np.round(res_slsqp['x'], 3))
 
-    # assert "Значение функции  -1" in captured.out
-    # from pdb import set_trace; set_trace()
-
-    assert [0.9, 1.016, 1.1] == list(np.round(res_scaled['x'], 3))
-    assert -29210742 == f_obj_val_scaled
-    assert 5399999.4 == margin_scaled
-
-    assert [1., 1., 1.] == list(np.round(res_nonscaled['x'], 3))
-    assert -1 == f_obj_val_nonscaled
-    assert 5400000.0 == margin_nonscaled
+    res_slsqp = \
+        scopt.minimize(obj, x0, bounds=x_bounds, constraints=[con_mrg], method='slsqp', args={'scale': 1. / R0})
+    print('Решение trust-constr', np.round(res_slsqp['x'], 4), res_slsqp['message'])
+    assert [0.9, 1.016, 1.1] == list(np.round(res_slsqp['x'], 3))
 
 
 def test_scipy_highs():
