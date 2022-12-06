@@ -186,7 +186,7 @@ def test_pyomo_gdp_gap():
     print('solution is', x_opt)
 
 
-def test_cvxpy_ecos_dcp_no():
+def test_cvxpy_ecos_dcp():
 
     X1, Y1 = 0.0, 0.0
     X2, Y2 = 1.0, 2.0
@@ -206,15 +206,6 @@ def test_cvxpy_ecos_dcp_no():
     # совершаем проверку задачи на выпуклость согласно правилам DCP
     print(f"is dcp: {problem.is_dcp()}")
 
-
-def test_cvxpy_ecos_dcp_yes():
-    X1, Y1 = 0.0, 0.0
-    X2, Y2 = 1.0, 2.0
-    # N = V2 / V1
-    K = 1.5
-    # задаем одну переменную x
-    X = cp.Variable(1)
-    Y_ = 1.0
     # скорректируем целевую функцию через вызов norm
     objective = cp.norm(cp.hstack([X - X1, Y_ - Y1]), 2) + K * cp.norm(cp.hstack([X2 - X, Y2 - Y_]), 2)
     # формируем ограничения и формируем задачу
@@ -228,6 +219,7 @@ def test_cvxpy_ecos_dcp_yes():
     # извлекаем решение
     x_opt = X.value[0]
     print(f'x_opt = {round(x_opt, 3)}' '| obj_val = ', round(sol, 2))
+
 
 def test_cvxpy_glpk_mi():
     # объявление переменных, отдельно целочисленных и непрерывных
