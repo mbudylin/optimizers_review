@@ -1,3 +1,4 @@
 cylp==0.91.5
 ipykernel==6.17.1
 pytest
+dataframe_image
